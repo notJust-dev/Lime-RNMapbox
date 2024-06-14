@@ -6,13 +6,19 @@ type ButtonProps = {
   title?: string;
 } & TouchableOpacityProps;
 
-export const Button = forwardRef<TouchableOpacity, ButtonProps>(({ onPress, title }, ref) => {
-  return (
-    <TouchableOpacity ref={ref} style={styles.button} onPress={onPress}>
-      <Text style={styles.buttonText}>{title}</Text>
-    </TouchableOpacity>
-  );
-});
+export const Button = forwardRef<TouchableOpacity, ButtonProps>(
+  ({ onPress, title, ...otherProps }, ref) => {
+    return (
+      <TouchableOpacity
+        ref={ref}
+        style={[styles.button, { backgroundColor: otherProps.disabled ? 'gray' : '#38C400' }]}
+        onPress={onPress}
+        {...otherProps}>
+        <Text style={styles.buttonText}>{title}</Text>
+      </TouchableOpacity>
+    );
+  }
+);
 
 const styles = StyleSheet.create({
   button: {
