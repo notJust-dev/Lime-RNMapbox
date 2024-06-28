@@ -14,11 +14,12 @@ export default function RideProvider({ children }: PropsWithChildren) {
 
   useEffect(() => {
     const fetchActiveRide = async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('rides')
         .select('*')
         .eq('user_id', userId)
         .is('finished_at', null)
+        .limit(1)
         .single();
 
       if (data) {

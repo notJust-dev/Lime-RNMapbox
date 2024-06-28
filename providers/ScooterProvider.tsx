@@ -71,6 +71,9 @@ export default function ScooterProvider({ children }: PropsWithChildren) {
     if (selectedScooter) {
       fetchDirections();
       setIsNearby(false);
+    } else {
+      setDirection(undefined);
+      setIsNearby(false);
     }
   }, [selectedScooter]);
 
