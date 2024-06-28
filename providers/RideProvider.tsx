@@ -1,14 +1,17 @@
+import * as Location from 'expo-location';
 import { PropsWithChildren, createContext, useContext, useEffect, useState } from 'react';
 import { Alert } from 'react-native';
 
 import { useAuth } from './AuthProvider';
 
 import { supabase } from '~/lib/supabase';
+import { fetchDirectionBasedOnCoords } from '~/services/directions';
 
 const RideContext = createContext({});
 
 export default function RideProvider({ children }: PropsWithChildren) {
   const [ride, setRide] = useState();
+  const [rideRoute, setRideRoute] = useState([]);
 
   const { userId } = useAuth();
 
@@ -29,6 +32,35 @@ export default function RideProvider({ children }: PropsWithChildren) {
 
     fetchActiveRide();
   }, []);
+
+  useEffect(() => {
+    let subscription: Location.LocationSubscription | undefined;
+
+    const watchLocation = async () => {
+      subscription = await Location.watchPositionAsync({ distanceInterval: 30 }, (newLocation) => {
+        console.log('New location: ', newLocation.coords.longitude, newLocation.coords.latitude);
+        setRideRoute((currrRoute) => [
+          ...currrRoute,
+          [newLocation.coords.longitude, newLocation.coords.latitude],
+        ]);
+        // const from = point([newLocation.coords.longitude, newLocation.coords.latitude]);
+        // const to = point([selectedScooter.long, selectedScooter.lat]);
+        // const distance = getDistance(from, to, { units: 'meters' });
+        // if (distance < 100) {
+        //   setIsNearby(true);
+        // }
+      });
+    };
+
+    if (ride) {
+      watchLocation();
+    }
+
+    // unsubscribe
+    return () => {
+      subscription?.remove();
+    };
+  }, [ride]);
 
   const startRide = async (scooterId: number) => {
     if (ride) {
@@ -57,9 +89,20 @@ export default function RideProvider({ children }: PropsWithChildren) {
       return;
     }
 
+    const actualRoute = await fetchDirectionBasedOnCoords(rideRoute);
+    const rideRouteCoords = actualRoute.matchings[0].geometry.coordinates;
+    const rideRouteDuration = actualRoute.matchings[0].duration;
+    const rideRouteDistance = actualRoute.matchings[0].distance;
+    setRideRoute(actualRoute.matchings[0].geometry.coordinates);
+
     const { error } = await supabase
       .from('rides')
-      .update({ finished_at: new Date() })
+      .update({
+        finished_at: new Date(),
+        routeDuration: rideRouteDuration,
+        routeDistance: rideRouteDistance,
+        routeCoords: rideRouteCoords,
+      })
       .eq('id', ride.id);
 
     if (error) {
@@ -69,10 +112,10 @@ export default function RideProvider({ children }: PropsWithChildren) {
     }
   };
 
-  console.log('Current ride: ', ride);
-
   return (
-    <RideContext.Provider value={{ startRide, finishRide, ride }}>{children}</RideContext.Provider>
+    <RideContext.Provider value={{ startRide, finishRide, ride, rideRoute }}>
+      {children}
+    </RideContext.Provider>
   );
 }
 
