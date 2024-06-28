@@ -1,18 +1,23 @@
 import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
 import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
 import { useEffect, useRef } from 'react';
-import { Text, Image, View } from 'react-native';
+import { Text, Image, View, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from './Button';
 
 import scooterImage from '~/assets/scooter.png';
+import { supabase } from '~/lib/supabase';
+import { useAuth } from '~/providers/AuthProvider';
+import { useRide } from '~/providers/RideProvider';
 import { useScooter } from '~/providers/ScooterProvider';
 
 export default function SelectedScooterSheet() {
   const { selectedScooter, duration, distance, isNearby } = useScooter();
 
   const bottomSheetRef = useRef<BottomSheet>(null);
+
+  const { startRide } = useRide();
 
   useEffect(() => {
     if (selectedScooter) {
@@ -67,7 +72,11 @@ export default function SelectedScooterSheet() {
           </View>
           {/* Bottom part */}
           <View>
-            <Button title="Start journey" disabled={!isNearby} />
+            <Button
+              title="Start journey"
+              onPress={() => startRide(selectedScooter.id)}
+              disabled={!isNearby}
+            />
           </View>
         </BottomSheetView>
       )}
